@@ -1,0 +1,99 @@
+services:
+  prosody:
+    build:
+      context: ./dk/
+      dockerfile: Dockerfile.prosody
+    container_name: prosody
+    restart: unless-stopped
+    hostname: prosody
+    ports:
+      - "5222:5222"
+      - "5269:5269"
+      - "5280:5280"
+      - "5281:5281"
+    volumes:
+      - ./prosody/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua
+      - ./prosody/data:/var/lib/prosody
+      - ./prosody/certs:/etc/prosody/certs:ro
+    networks:
+      - xmpp-net
+
+  telegram:
+    image: codeberg.org/slidge/slidgram:v0.4.0
+    container_name: telegram
+    restart: unless-stopped
+    depends_on:
+      - prosody
+    volumes:
+      - ./slidge/telegram/:/var/lib/slidge/
+      - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
+      - ./slidge/telegram.conf:/etc/slidge/telegram.conf
+    command:
+      - -c
+      - /etc/slidge/telegram.conf
+    environment:
+      TZ: Europe/Madrid
+    networks:
+      - xmpp-net
+
+  whatsapp:
+    image: codeberg.org/slidge/slidge-whatsapp:v0.4.0-arm64
+    container_name: whatsapp
+    restart: unless-stopped
+    depends_on:
+      - prosody
+    volumes:
+      - ./slidge/whatsapp/:/var/lib/slidge/
+      - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
+      - ./slidge/whatsapp.conf:/etc/slidge/whatsapp.conf
+    command:
+      - -c
+      - /etc/slidge/whatsapp.conf
+    environment:
+      TZ: Europe/Madrid
+    networks:
+      - xmpp-net
+
+  steam:
+    image: codeberg.org/slidge/sleamdge:v0.4.0
+    container_name: steam
+    restart: unless-stopped
+    depends_on:
+      - prosody
+    volumes:
+      - ./slidge/steam/:/var/lib/slidge/
+      - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
+      - ./slidge/steam.conf:/etc/slidge/steam.conf
+    command:
+      - -c
+      - /etc/slidge/steam.conf
+    environment:
+      TZ: Europe/Madrid
+    networks:
+      - xmpp-net
+
+  google:
+    build:
+      context: ./dk/
+      dockerfile: Dockerfile.google
+    container_name: google
+    restart: unless-stopped
+    depends_on:
+      - prosody
+    entrypoint:
+      - /usr/bin/spectrum2
+      - --no-daemonize
+      - --config
+      - /etc/spectrum2/transports/google.cfg
+    volumes:
+      - ./spectrum2/google.cfg:/etc/spectrum2/transports/google.cfg
+      - ./spectrum2/google/log/:/var/log/spectrum2/
+      - ./spectrum2/google/data/:/var/lib/spectrum2/
+    environment:
+      TZ: Europe/Madrid
+    networks:
+      - xmpp-net
+
+networks:
+  xmpp-net:
+    driver: bridge

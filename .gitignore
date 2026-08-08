@@ -1,0 +1,14 @@
+.env
+notas.txt
+
+prosody/*
+!prosody/*template*
+!prosody/mod_*.lua
+!prosody/Dockerfile
+
+slidge/*
+!slidge/*template*
+!slidge/types.py
+
+spectrum2/*
+!spectrum2/*template*

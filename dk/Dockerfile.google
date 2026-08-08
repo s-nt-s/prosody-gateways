@@ -1,0 +1,12 @@
+FROM cr.spectrum.im/spectrumim/spectrum:master
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get install -y nano git build-essential pkg-config libglib2.0-dev libjson-glib-dev libpurple-dev protobuf-c-compiler libprotobuf-c-dev libgcrypt20-dev libssl-dev && \
+    rm -rf /tmp/purple-googlechat && \
+    git clone --depth 1 https://github.com/EionRobb/purple-googlechat.git /tmp/purple-googlechat && \
+    cd /tmp/purple-googlechat && \
+    sed -i 's/OPT_PROTO_NO_PASSWORD |//g' libgooglechat.c && \
+    make -j$(nproc) && \
+    cp libgooglechat.so /usr/lib/purple-2/ && \
+    rm -rf /tmp/purple-googlechat

@@ -1,0 +1,4 @@
+FROM prosodyim/prosody:13.0
+
+RUN prosodyctl install --server=https://modules.prosody.im/rocks/ mod_privilege && \
+    prosodyctl install --server=https://modules.prosody.im/rocks/ mod_reload_components
