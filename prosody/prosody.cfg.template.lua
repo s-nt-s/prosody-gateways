@@ -18,7 +18,7 @@ modules_enabled = {
   "roster"; "saslauth"; "tls"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
-  "carbons";
+  "carbons"; "offline";
   "privilege";
   "http_file_share";
   "admin_shell";
@@ -60,7 +60,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
     key = "/etc/prosody/certs/{{XMPP_DOMAIN}}.key";
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
-  modules_enabled = { "privilege", "pep", "carbons" }
+  modules_enabled = { "privilege", "pep", "carbons", "offline" }
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
