@@ -2,8 +2,10 @@ pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
 plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1" }
 
+s2s_secure_auth = false
+
 allow_registration = false
-c2s_require_encryption = false
+c2s_require_encryption = true
 s2s_secure_auth = false
 
 c2s_ports = { 5222 }
@@ -15,7 +17,7 @@ component_interfaces = { "*" }
 
 
 modules_enabled = {
-  "roster"; "saslauth"; "tls"; "dialback";
+  "roster"; "saslauth"; "tls"; "smacks"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
   "carbons"; "offline";
