@@ -20,7 +20,7 @@ modules_enabled = {
   "roster"; "saslauth"; "tls"; "smacks"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
-  "carbons"; "offline";
+  "carbons"; "offline"; "mam";
   "privilege";
   "http_file_share";
   "admin_shell";
@@ -62,7 +62,9 @@ VirtualHost "{{XMPP_DOMAIN}}"
     key = "/etc/prosody/certs/{{XMPP_DOMAIN}}.key";
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
-  modules_enabled = { "privilege", "pep", "carbons", "offline" }
+  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam" }
+  archive_expires_after = 0 -- guardar historial indefinidamente
+  default_archive_policy = "roster"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
