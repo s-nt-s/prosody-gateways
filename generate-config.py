@@ -7,12 +7,16 @@ root = Path(".")
 
 (root / "env.example.txt").write_text(
     re.sub(
-        r'=[^"].*',
-        '="*******"',
+        r"XMPP_ADMIN_NAME=.*",
+        r'XMPP_ADMIN_NAME="admin"',
         re.sub(
-            r"#.*",
-            "",
-            (root / ".env").read_text(),
+            r'=[^"].*',
+            '="*******"',
+            re.sub(
+                r"#.*",
+                "",
+                (root / ".env").read_text(),
+            )
         )
     ).strip()
 )
