@@ -12,3 +12,6 @@ slidge/*
 
 spectrum2/*
 !spectrum2/*template*
+
+tools/*
+!tools/*.py
