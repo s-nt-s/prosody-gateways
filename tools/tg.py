@@ -128,7 +128,7 @@ async def do_main():
     await client.start()
 
     try:
-        #await do_search(client)
+        await do_search(client)
         await resolve_lookup(
             client,
             tuple(sorted(set(PHONES).difference(DATA.keys())))
