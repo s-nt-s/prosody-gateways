@@ -19,7 +19,7 @@ services:
       - xmpp-net
 
   telegram:
-    image: codeberg.org/slidge/slidgram:v0.4.0
+    image: codeberg.org/slidge/slidgram:v0.4.1
     container_name: telegram
     restart: unless-stopped
     depends_on:
