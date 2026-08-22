@@ -13,6 +13,7 @@ services:
       - "5281:5281"
     volumes:
       - ./prosody/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua
+      - ./prosody/modules:/etc/prosody/modules:ro
       - ./prosody/data:/var/lib/prosody
       - ./prosody/certs:/etc/prosody/certs:ro
     networks:

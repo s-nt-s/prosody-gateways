@@ -63,6 +63,22 @@ Puedes obviar `XMPP_CRT` y `XMPP_KEY` si vas a usar certificados autofirmados.
 
 Nota: El usuario administrador (el que en el ejemplo aparece como `XMPP_ADMIN_NAME="admin"`) también va a a ser el que tu uses para conectarte, asi que si quieres cámbiale el nombre.
 
+### API HTTP de salas
+
+El módulo [`mod_rooms`](./prosody/modules/mod_rooms.lua) publica `GET /rooms`
+en los puertos HTTP de Prosody. Requiere una cabecera Basic Auth con las
+credenciales de un usuario XMPP local, por ejemplo:
+
+```bash
+curl -u usuario:contraseña http://servidor:5280/rooms
+```
+
+Devuelve `{ "rooms": [...] }`. Cada sala contiene `jid`, `name`, sus opciones
+principales y `affiliations`, una lista de objetos `{ "jid", "affiliation" }`
+con afiliaciones `owner`, `admin`, `member`, `outcast` o `none`. Se consideran
+visibles las salas públicas y las salas privadas en las que el usuario tenga
+una afiliación distinta de `none`.
+
 ## 4) Levantar los contenedores
 
 ```bash

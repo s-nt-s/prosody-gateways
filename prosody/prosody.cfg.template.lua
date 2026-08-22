@@ -1,6 +1,8 @@
 pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
-plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1" }
+plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1", "/etc/prosody/modules" }
+
+rooms_service = "rooms.{{XMPP_DOMAIN}}"
 
 s2s_secure_auth = false
 
@@ -51,6 +53,9 @@ local _http_file_share_access = {
 
 Component "pubsub.{{XMPP_DOMAIN}}" "pubsub"
 
+Component "rooms.{{XMPP_DOMAIN}}" "muc"
+  name = "Prosody Chatrooms"
+
 Component "upload.{{XMPP_DOMAIN}}" "http_file_share"
   -- allow slidgram to use the upload component
   -- point generated upload URLs to the public host that actually serves the file share endpoint
@@ -63,7 +68,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
     key = "/etc/prosody/certs/{{XMPP_DOMAIN}}.key";
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
-  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam" }
+  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam", "rooms" }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
