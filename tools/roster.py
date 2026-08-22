@@ -23,7 +23,7 @@ from collections import defaultdict
 
 from os import chdir
 from os.path import dirname, abspath, isfile
-import time
+import requests
 
 chdir(dirname(abspath(__file__)))
 
@@ -31,6 +31,15 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 GG = '@' + os.environ['GOOGLE_COMPONENT_JID']
+URL_ROSTER_FIX = os.environ['ROSTER_FIX']
+
+def get_json(url: str):
+    r = requests.get(url)
+    r.raise_for_status()
+    js = r.json()
+    if not isinstance(js, dict):
+        raise ValueError("Expected a dictionary")
+    return js
 
 
 def _eq(a, b):
@@ -100,7 +109,7 @@ ITEM_KEYS = to_tp('ask', 'name', 'groups', 'subscription', 'approved')
 DIR_AVATAR = Path(__file__).parent / "avatar"
 if not DIR_AVATAR.is_dir():
     DIR_AVATAR.mkdir()
-FIX = {k: MyUser.build(v) for k, v in read_json("roster_fix.json").items()}
+FIX = {k: MyUser.build(v) for k, v in get_json(URL_ROSTER_FIX).items()}
 GRP_ROOMS = {k: to_tp(*v) for k, v in read_json("rooms.json").items()}
 
 

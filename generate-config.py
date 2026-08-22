@@ -5,20 +5,23 @@ import re
 
 root = Path(".")
 
+
+def _sub(txt: str, **kwargs) -> str:
+    for k, v in kwargs.items():
+        txt = re.sub(k, v, txt)
+    return txt.strip()
+
+
 (root / "env.example.txt").write_text(
-    re.sub(
-        r"XMPP_ADMIN_NAME=.*",
-        r'XMPP_ADMIN_NAME="admin"',
-        re.sub(
-            r'=[^"].*',
-            '="*******"',
-            re.sub(
-                r"#.*",
-                "",
-                (root / ".env").read_text(),
-            )
-        )
-    ).strip()
+    _sub(
+        (root / ".env").read_text(),
+        **{
+            r".*\b(ROSTER_FIX)\b.*": "",
+            r"#.*": "",
+            r'=[^"].*': '="*******"',
+            r"XMPP_ADMIN_NAME=.*": r'XMPP_ADMIN_NAME="admin"',
+        }
+    )
 )
 
 def _g(key: str) -> str:
