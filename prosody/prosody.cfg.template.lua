@@ -54,6 +54,7 @@ Component "pubsub.{{XMPP_DOMAIN}}" "pubsub"
 Component "upload.{{XMPP_DOMAIN}}" "http_file_share"
   -- allow slidgram to use the upload component
   -- point generated upload URLs to the public host that actually serves the file share endpoint
+  http_host = "{{XMPP_DOMAIN}}"
   http_external_url = "https://{{XMPP_DOMAIN}}"
   http_file_share_access = _http_file_share_access
 
