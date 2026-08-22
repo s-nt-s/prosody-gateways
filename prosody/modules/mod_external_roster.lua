@@ -2,6 +2,8 @@ local st = require "util.stanza"
 local http = require "util.http"
 local json = require "util.json"
 
+-- Intercepta las lecturas del roster y completa los contactos con datos de un
+-- servicio HTTP. Si el servicio no está disponible, devuelve el roster normal.
 local roster_xmlns = "jabber:iq:roster"
 local endpoint = module:get_option_string("external_roster_url")
 local token = module:get_option_string("external_roster_token")
@@ -9,18 +11,23 @@ local token = module:get_option_string("external_roster_token")
 module:add_feature(roster_xmlns)
 
 local function url_encode(value)
+    -- Escapa el usuario y el host antes de añadirlos a la cadena de consulta.
     return tostring(value):gsub("([^%w%-_%.~])", function(character)
         return string.format("%%%02X", string.byte(character))
     end)
 end
 
 local function local_roster_reply(session, stanza)
+    -- Reproduce la respuesta GET de mod_roster para que la consulta externa sea
+    -- asíncrona, sin retrasar ni reinyectar el IQ original.
     local reply = st.reply(stanza)
     local query = stanza.tags[1]
     local client_version = tonumber(query and query.attr.ver)
     local roster_meta = session.roster[false] or {}
     local server_version = tonumber(roster_meta.version or 1)
 
+    -- Con versionado del roster, un cliente actualizado solo recibe un resultado
+    -- vacío con la versión actual, igual que en mod_roster.
     if not (client_version and client_version == server_version) then
         reply:query(roster_xmlns)
         for contact_jid, item in pairs(session.roster) do
@@ -45,11 +52,13 @@ local function local_roster_reply(session, stanza)
 end
 
 local function apply_external_data(session, data)
+    -- Acepta tanto un mapa directo de JID como el formato { contacts = ... }.
     local contacts = data
     if type(data) == "table" and type(data.contacts) == "table" then
         contacts = data.contacts
     end
     if type(contacts) == "table" and #contacts > 0 then
+        -- Convierte el formato de lista usado por tools/roster.py en un mapa de JID.
         local by_jid = {}
         for _, contact in ipairs(contacts) do
             if type(contact) == "table" and type(contact.jid) == "string" then
@@ -67,6 +76,8 @@ local function apply_external_data(session, data)
         if type(contact_jid) == "string" and type(values) == "table" then
             local item = session.roster[contact_jid]
             if item then
+                -- Solo completa entradas existentes; el servicio externo no puede
+                -- añadir, eliminar ni modificar el estado de suscripción.
                 if type(values.name) == "string" then
                     item.name = values.name
                 end
@@ -92,6 +103,7 @@ local function request_roster(session, stanza)
     local url = endpoint .. "?user=" .. url_encode(username) .. "&host=" .. url_encode(host)
     local headers = { ["Accept"] = "application/json" }
     if token then
+        -- El token es opcional y se envía como credencial Bearer estándar.
         headers["Authorization"] = "Bearer " .. token
     end
 
@@ -117,11 +129,14 @@ local function request_roster(session, stanza)
         else
             module:log("warn", "External roster request for %s failed with HTTP status %s", username, code or "unknown")
         end
+        -- Cualquier error termina usando el roster interno como alternativa.
         finish(local_roster_reply(session, stanza))
     end)
 end
 
 module:hook("iq/self/" .. roster_xmlns .. ":query", function(event)
+    -- La prioridad 1000 se ejecuta antes que mod_roster. Solo se interceptan
+    -- GET; los cambios del roster (SET) siguen gestionados por Prosody.
     if not endpoint or event.stanza.attr.type ~= "get" then
         return
     end

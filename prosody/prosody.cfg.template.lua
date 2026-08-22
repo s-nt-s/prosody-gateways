@@ -1,3 +1,6 @@
+
+external_avatar_refresh = 900
+external_avatar_max_size = 1048576
 pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
 plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1", "/etc/prosody/modules" }
@@ -82,25 +85,25 @@ VirtualHost "{{XMPP_DOMAIN}}"
 
 Component "{{TELEGRAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+    modules_enabled = {"privilege", "external_avatar"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+    modules_enabled = {"privilege", "external_avatar"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+    modules_enabled = {"privilege", "external_avatar"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"register", "privilege"}
+    modules_enabled = {"register", "privilege", "external_avatar"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 

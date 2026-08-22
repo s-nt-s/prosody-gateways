@@ -63,6 +63,14 @@ Puedes obviar `XMPP_CRT` y `XMPP_KEY` si vas a usar certificados autofirmados.
 
 Nota: El usuario administrador (el que en el ejemplo aparece como `XMPP_ADMIN_NAME="admin"`) también va a a ser el que tu uses para conectarte, asi que si quieres cámbiale el nombre.
 
+El módulo [`mod_external_avatar`](./prosody/modules/mod_external_avatar.lua)
+usa el campo `avatar` del mismo servicio externo del roster. Descarga la imagen
+y la publica en la vCard del contacto cuando ya está disponible. Si la URL no
+existe, no es HTTPS, la descarga falla o la imagen supera `external_avatar_max_size`,
+se conserva la vCard original del componente. La primera consulta puede usar la
+vCard original mientras termina la descarga; las siguientes recibirán el avatar
+externo desde la caché.
+
 ### Nombres y grupos externos del roster
 
 El módulo [`mod_external_roster`](./prosody/modules/mod_external_roster.lua) está
