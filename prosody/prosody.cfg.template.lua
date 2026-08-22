@@ -1,6 +1,12 @@
 pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
-plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1" }
+plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1", "/etc/prosody/modules" }
+
+-- Endpointo opcional: debe devolver {"jid": {"name": "...", "groups": [...]}}
+-- o {"contacts": {"jid": {"name": "...", "groups": [...]}}}.
+-- Si no responde, el roster interno se devuelve sin cambios.
+-- external_roster_url = "https://servicio.example/roster"
+-- external_roster_token = "..."
 
 s2s_secure_auth = false
 
@@ -63,7 +69,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
     key = "/etc/prosody/certs/{{XMPP_DOMAIN}}.key";
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
-  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam" }
+  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam", "external_roster" }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"

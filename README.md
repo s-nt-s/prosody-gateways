@@ -63,6 +63,30 @@ Puedes obviar `XMPP_CRT` y `XMPP_KEY` si vas a usar certificados autofirmados.
 
 Nota: El usuario administrador (el que en el ejemplo aparece como `XMPP_ADMIN_NAME="admin"`) también va a a ser el que tu uses para conectarte, asi que si quieres cámbiale el nombre.
 
+### Nombres y grupos externos del roster
+
+El módulo [`mod_external_roster`](./prosody/modules/mod_external_roster.lua) está
+activado para el `VirtualHost`. Para usarlo, añade estas opciones al bloque de
+configuración de ese host:
+
+```lua
+external_roster_url = "https://servicio.example/roster"
+external_roster_token = "token-opcional"
+```
+
+Prosody hará una petición `GET` con `user` y `host` como parámetros. El servicio
+puede devolver un mapa por JID:
+
+```json
+{"contacto@example.com": {"name": "Nombre", "groups": ["Amigos"]}}
+```
+
+También acepta una lista de objetos con `jid`, como la generada por
+`tools/roster.py`, o un objeto `{ "contacts": ... }`. Solo se modifican
+`name` y `groups` de contactos que ya existen en el roster interno. Si el
+endpoint no está configurado, falla o devuelve datos inválidos, se entrega el
+roster interno sin cambios.
+
 ## 4) Levantar los contenedores
 
 ```bash
