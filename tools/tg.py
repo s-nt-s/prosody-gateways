@@ -47,7 +47,6 @@ class MyClient(TelegramClient):
             logger.warning(f"{phone} has {size} users")
         return users[0]
 
-
     async def iter_users(self):
         async for dialog in self.iter_dialogs():
             if not isinstance(dialog, Dialog):
@@ -79,6 +78,7 @@ def read_json(path: str) -> dict[str, int]:
         return {}
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def write_json(path: str, data: dict):
     data = dict(sorted(data.items(), key=lambda x: (x[1] is None, x)))
