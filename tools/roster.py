@@ -20,6 +20,7 @@ from io import BytesIO
 from typing import NamedTuple, Optional
 from slixmpp.plugins.xep_0045.muc import XEP_0045
 from collections import defaultdict
+import re
 
 from os import chdir
 from os.path import dirname, abspath, isfile
@@ -161,6 +162,10 @@ class RosterExporter(ClientXMPP):
                 fx = (fx or MyUser(name=name))._replace(
                     groups=list(group_by_room)
                 )
+                if fx.name:
+                    fx = fx._replace(
+                        name=re.sub(r"\s+<[^<>]+>\s*$", "", fx.name)
+                    )
             if fx:
                 kwargs = fx.get_update_kwargs(
                     name=name,
