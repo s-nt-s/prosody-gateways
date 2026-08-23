@@ -19,7 +19,8 @@ component_interfaces = { "*" }
 
 
 modules_enabled = {
-  "roster"; "roster_aliases"; "saslauth"; "tls"; "smacks"; "dialback";
+  "roster"; "roster_aliases"; "saslauth";
+  "tls"; "smacks"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
   "carbons"; "offline"; "mam";
@@ -78,25 +79,25 @@ VirtualHost "{{XMPP_DOMAIN}}"
 
 Component "{{TELEGRAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege", "roster_avatars"}
+  modules_enabled = {"privilege"}--, "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege", "roster_avatars"}
+  modules_enabled = {"privilege"}--, "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege", "roster_avatars"}
+  modules_enabled = {"privilege"}--, "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"register", "privilege", "roster_avatars"}
+  modules_enabled = {"register", "privilege"}--, "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 

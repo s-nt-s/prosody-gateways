@@ -103,17 +103,43 @@ local function avatar_from(directory, jid)
     return avatar_item(image_file(directory, jid))
 end
 
+local function rewrite_avatar_update(event)
+    local stanza = event.stanza
+    local source = stanza.attr.from
+    if not source then
+        return
+    end
+
+    source = jid.bare(source)
+    if module:get_host_type() ~= "component" then
+        return
+    end
+    local _, source_host = jid.split(source)
+    if source_host ~= module.host then
+        return
+    end
+
+    local avatar = avatar_from(custom_path, source)
+    if not avatar then
+        return
+    end
+
+    local update = stanza:get_child("x", "vcard-temp:x:update")
+    if not update then
+        update = st.stanza("x", { xmlns = "vcard-temp:x:update" })
+        stanza:add_child(update)
+    end
+    local photo = update:get_child("photo")
+    if photo then
+        photo[1] = avatar.hash
+    else
+        update:text_tag("photo", avatar.hash)
+    end
+end
+
 local function send_avatar(event, avatar)
     local query = event.stanza.tags[1]
     local item = query:get_child("items")
-    local requested_id = item and item.tags[1] and item.tags[1].attr.id
-    if requested_id and requested_id ~= avatar.hash then
-        event.origin.send(st.reply(event.stanza)
-            :tag("pubsub", { xmlns = "http://jabber.org/protocol/pubsub" })
-                :tag("items", { node = item.attr.node }))
-        return true
-    end
-
     local node = item.attr.node
     local payload = node == nodes.data and avatar.data or avatar.metadata
     event.origin.send(st.reply(event.stanza)
@@ -179,6 +205,10 @@ module:hook("iq/bare/http://jabber.org/protocol/pubsub:pubsub", function (event)
         return send_avatar(event, default)
     end
 end, -1)
+
+module:hook("pre-presence/full", rewrite_avatar_update, 1000)
+module:hook("pre-presence/bare", rewrite_avatar_update, 1000)
+module:hook("pre-presence/host", rewrite_avatar_update, 1000)
 
 module:hook("iq-get/bare/vcard-temp:vCard", function (event)
     local target = event.stanza.attr.to
