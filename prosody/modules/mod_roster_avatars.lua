@@ -145,7 +145,6 @@ module:hook("iq/bare/http://jabber.org/protocol/pubsub:pubsub", function (event)
     if module:get_host_type() ~= "component" or target_host ~= module.host then
         return
     end
-    module:log("debug", "Avatar request for %s, node %s", target, node)
     local custom = avatar_from(custom_path, target)
     if custom then
         return send_avatar(event, custom)
