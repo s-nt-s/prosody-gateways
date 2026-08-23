@@ -78,6 +78,16 @@ Opcionalmente, crea `prosody/data/roster-names.json` con un diccionario indexado
 
 Prosody mantiene todas las operaciones normales del roster. Para los JID incluidos en este archivo usa el `name` y los `groups` indicados; si el archivo no existe, el JSON es inválido o el JID no aparece, conserva el comportamiento normal.
 
+### Avatares personalizados
+
+Los avatares opcionales se buscan en `prosody/data/avatar/custom/` y `prosody/data/avatar/default/`, usando el JID completo como nombre de archivo. Se admiten imágenes JPG, PNG, GIF, WebP, BMP y TIFF, por ejemplo:
+
+```text
+prosody/data/avatar/custom/+34600808903@whatsapp.xmpp.ole.dedyn.io.png
+```
+
+La prioridad es: custom, avatar del origen y default. Si hay varios archivos con el mismo JID, se usa el más reciente. Los archivos se leen dinámicamente, sin reiniciar Prosody.
+
 ## 4) Levantar los contenedores
 
 ```bash

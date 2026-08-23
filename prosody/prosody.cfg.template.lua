@@ -78,25 +78,25 @@ VirtualHost "{{XMPP_DOMAIN}}"
 
 Component "{{TELEGRAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+  modules_enabled = {"privilege", "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+  modules_enabled = {"privilege", "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"privilege"}
+  modules_enabled = {"privilege", "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"register", "privilege", "roster_aliases"}
+  modules_enabled = {"register", "privilege", "roster_avatars"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
