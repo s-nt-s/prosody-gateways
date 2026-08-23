@@ -63,6 +63,21 @@ Puedes obviar `XMPP_CRT` y `XMPP_KEY` si vas a usar certificados autofirmados.
 
 Nota: El usuario administrador (el que en el ejemplo aparece como `XMPP_ADMIN_NAME="admin"`) también va a a ser el que tu uses para conectarte, asi que si quieres cámbiale el nombre.
 
+### Nombres y grupos del roster
+
+Opcionalmente, crea `prosody/data/roster-names.json` con un diccionario indexado por JID:
+
+```json
+{
+   "contacto@example.org": {
+      "name": "Nombre mostrado",
+      "groups": ["Familia", "Trabajo"]
+   }
+}
+```
+
+Prosody mantiene todas las operaciones normales del roster. Para los JID incluidos en este archivo usa el `name` y los `groups` indicados; si el archivo no existe, el JSON es inválido o el JID no aparece, conserva el comportamiento normal.
+
 ## 4) Levantar los contenedores
 
 ```bash

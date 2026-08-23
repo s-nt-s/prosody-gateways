@@ -1,8 +1,10 @@
 pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
-plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1" }
-
-s2s_secure_auth = false
+plugin_paths = {
+  "/usr/lib/prosody/modules",
+  "/usr/local/share/lua/5.1",
+  "/etc/prosody/custom_modules"
+}
 
 allow_registration = false
 c2s_require_encryption = true
@@ -17,7 +19,7 @@ component_interfaces = { "*" }
 
 
 modules_enabled = {
-  "roster"; "saslauth"; "tls"; "smacks"; "dialback";
+  "roster"; "roster_aliases"; "saslauth"; "tls"; "smacks"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
   "carbons"; "offline"; "mam";
@@ -94,7 +96,7 @@ Component "{{STEAM_COMPONENT_JID}}"
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"register", "privilege"}
+  modules_enabled = {"register", "privilege", "roster_aliases"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 

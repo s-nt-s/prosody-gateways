@@ -14,6 +14,7 @@ services:
     volumes:
       - ./prosody/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua
       - ./prosody/data:/var/lib/prosody
+      - ./prosody/modules:/etc/prosody/custom_modules:ro
       - ./prosody/certs:/etc/prosody/certs:ro
     networks:
       - xmpp-net
