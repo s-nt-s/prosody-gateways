@@ -132,7 +132,10 @@ class RosterExporter(ClientXMPP):
                         name=re.sub(r"\s+<[^<>]+>\s*$", "", user.name)
                     )
 
-            user = user._replace(name=clean_name(user.name))
+            user = user._replace(
+                name=clean_name(user.name),
+                groups=clean_groups(user.groups)
+            )
             contacts[jid.jid] = user
         return contacts
 
@@ -193,6 +196,14 @@ def clean_name(name: str) -> str:
     if name in (name.upper(), name.lower()):
         return name.title()
     return name
+
+def clean_groups(groups: Optional[list[str]]) -> Optional[list[str]]:
+    if not groups:
+        return None
+    ok = set(groups).difference({"WhatsApp", "Telegram", "Steam", "Google Chat"})
+    if ok:
+        return sorted(ok)
+    return groups
 
 
 def main() -> None:
