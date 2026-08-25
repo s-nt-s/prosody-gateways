@@ -1,8 +1,10 @@
 pidfile = "/var/run/prosody/prosody.pid"
 data_path = "/var/lib/prosody"
-plugin_paths = { "/usr/lib/prosody/modules", "/usr/local/share/lua/5.1" }
-
-s2s_secure_auth = false
+plugin_paths = {
+  "/usr/lib/prosody/modules",
+  "/usr/local/share/lua/5.1",
+  "/etc/prosody/custom_modules"
+}
 
 allow_registration = false
 c2s_require_encryption = true
@@ -17,7 +19,8 @@ component_interfaces = { "*" }
 
 
 modules_enabled = {
-  "roster"; "saslauth"; "tls"; "smacks"; "dialback";
+  "roster"; "saslauth";
+  "tls"; "smacks"; "dialback";
   "disco"; "version"; "uptime";
   "ping"; "register"; "admin_adhoc";
   "carbons"; "offline"; "mam";
@@ -36,7 +39,7 @@ local _privileges = {
   iq = {
     ["http://jabber.org/protocol/pubsub"] = "both";      -- for PEP Bookmarks
     ["http://jabber.org/protocol/pubsub#owner"] = "set"; -- for Message Display Synchronization
-    ["urn:xmpp:http:upload:0"] = "both";                  -- for HTTP Upload on behalf of users
+    ["urn:xmpp:http:upload:0"] = "both";                 -- for HTTP Upload on behalf of users
   }
 };
 
@@ -63,7 +66,9 @@ VirtualHost "{{XMPP_DOMAIN}}"
     key = "/etc/prosody/certs/{{XMPP_DOMAIN}}.key";
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
-  modules_enabled = { "privilege", "pep", "carbons", "offline", "mam" }
+  modules_enabled = {
+    "privilege", "pep", "carbons", "offline", "mam", "roster_aliases"
+  }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
@@ -94,7 +99,7 @@ Component "{{STEAM_COMPONENT_JID}}"
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
-  modules_enabled = {"register", "privilege"}
+  modules_enabled = {"privilege"}
   http_file_share_expires_after = 86400   -- 1 día
   http_file_share_access = _http_file_share_access
 
