@@ -28,6 +28,7 @@ modules_enabled = {
   "http_file_share";
   "admin_shell";
   "pep";
+  --"contact_avatars";
   --"bosh"; "websocket";
   "reload_components";
 }
