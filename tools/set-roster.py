@@ -49,7 +49,7 @@ class MyUser(NamedTuple):
             if k not in cls._fields:
                 del obj[k]
         return cls(**obj)
-    
+
     def to_dict(self):
         return {
             k: v
@@ -70,7 +70,6 @@ def read_json(path: str) -> dict[str, int]:
         return json.load(f)
 
 
-#OUTPUT_FILE = Path(__file__).with_name("roster-fixed.json")
 ITEM_KEYS = to_tp('ask', 'name', 'groups', 'subscription', 'approved')
 FIX = {k: MyUser.build(v) for k, v in get_json(URL_ROSTER_FIX).items()}
 GRP_ROOMS = {k: to_tp(*v) for k, v in read_json("rooms.json").items()}
@@ -104,7 +103,7 @@ class RosterExporter(ClientXMPP):
             if not isinstance(jid, JID):
                 logger.critical(f"jid = {type(jid)}")
                 continue
-            if not jid.jid.endswith(TAIL_XMPP_DOMAIN):
+            if "@" not in jid.jid or not jid.jid.endswith(TAIL_XMPP_DOMAIN):
                 continue
             if not isinstance(item, dict):
                 logger.critical(f"item = {type(item)}")
