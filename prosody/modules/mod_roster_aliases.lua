@@ -7,11 +7,9 @@ local aliases_file = module:get_option_string(
     "/var/lib/prosody/roster-names.json"
 )
 
-local roster_defaults = setmetatable({}, { __mode = "k" })
-local aliases_signatures = setmetatable({}, { __mode = "k" })
-
 module:log("info", "roster_aliases loaded on host %s", module.host)
 
+-- Lee los aliases en cada operación para aceptar cambios sin reiniciar Prosody.
 local function load_aliases()
     local file = io.open(aliases_file, "r")
     if not file then
@@ -28,8 +26,28 @@ local function load_aliases()
     return {}, content
 end
 
-local function apply_alias(aliases, jid, item)
-    local alias = aliases[jid or item.jid]
+-- Compara mapas de grupos sin depender del orden en que fueron definidos.
+local function groups_equal(left, right)
+    if type(left) ~= "table" or type(right) ~= "table" then
+        return left == right
+    end
+    for group, enabled in pairs(left) do
+        if right[group] ~= enabled then
+            return false
+        end
+    end
+    for group, enabled in pairs(right) do
+        if left[group] ~= enabled then
+            return false
+        end
+    end
+    return true
+end
+
+-- Aplica al contacto el nombre y los grupos definidos en el archivo JSON.
+local function apply_alias(aliases, contact_jid, item)
+    local normalized_jid = jid.prep(contact_jid or item.jid)
+    local alias = normalized_jid and aliases[normalized_jid]
     if type(alias) ~= "table" then
         return
     end
@@ -47,46 +65,58 @@ local function apply_alias(aliases, jid, item)
                 groups[group] = true
             end
         end
-        item.groups = groups
-    end
-end
-
-local function save_roster_defaults(roster)
-    local defaults = {}
-    for jid, item in pairs(roster) do
-        if type(item) == "table" and type(jid) == "string" then
-            defaults[jid] = {
-                name = item.name,
-                groups = item.groups,
-            }
+        if not groups_equal(item.groups, groups) then
+            item.groups = groups
         end
     end
-    roster_defaults[roster] = defaults
 end
 
+-- Aplica los aliases al roster y devuelve los contactos que realmente cambiaron.
 local function apply_roster(roster, aliases)
     if type(roster) ~= "table" then
-        return
+        return false, {}
     end
-    local defaults = roster_defaults[roster]
-    if not defaults then
-        save_roster_defaults(roster)
-        defaults = roster_defaults[roster]
-    end
+    local changed = false
+    local changed_jids = {}
     for jid, item in pairs(roster) do
         if type(item) == "table" and type(jid) == "string" then
-            local default = defaults[jid]
-            if default then
-                item.name = default.name
-                item.groups = default.groups
-            end
+            local old_name = item.name
+            local old_groups = item.groups
             apply_alias(aliases, jid, item)
+            if old_name ~= item.name or old_groups ~= item.groups then
+                changed = true
+                changed_jids[#changed_jids + 1] = jid
+            end
         end
     end
+    return changed, changed_jids
 end
 
+-- Guarda los cambios usando la API oficial y notifica a las sesiones conectadas.
+local function persist_roster_aliases(username, host, roster, aliases)
+    local changed, changed_jids = apply_roster(roster, aliases)
+    if not changed then
+        return true
+    end
+    if not roster_manager.save_roster(username, host, roster) then
+        module:log(
+            "error",
+            "Could not persist aliases for roster %s@%s",
+            username,
+            host
+        )
+        return false
+    end
+    for _, contact_jid in ipairs(changed_jids) do
+        roster_manager.roster_push(username, host, contact_jid)
+    end
+    return true
+end
+
+-- Modifica un item de una petición IQ antes de que Prosody lo persista.
 local function apply_stanza_alias(item, aliases)
-    local alias = aliases[item.attr.jid]
+    local item_jid = jid.prep(item.attr.jid)
+    local alias = item_jid and aliases[item_jid]
     if type(alias) ~= "table" then
         return
     end
@@ -110,6 +140,7 @@ local function apply_stanza_alias(item, aliases)
     end
 end
 
+-- Cambia el nick visible de un participante MUC sin cambiar su JID real.
 local function apply_participant_alias(event)
     local stanza = event.stanza
     local origin_type = event.origin and event.origin.type or "nil"
@@ -201,25 +232,25 @@ local function apply_participant_alias(event)
 end
 
 module:hook("roster-load", function(event)
-    save_roster_defaults(event.roster)
     local aliases = load_aliases()
-    apply_roster(event.roster, aliases)
+    persist_roster_aliases(event.username, event.host, event.roster, aliases)
 end)
 
+-- Reaplica la política cuando el cliente solicita su propio roster.
 module:hook("iq/self/jabber:iq:roster:query", function(event)
     if event.stanza.attr.type ~= "get" then
         return
     end
-    local aliases, signature = load_aliases()
-    local roster = event.origin.roster
-    if roster and roster[false]
-        and signature ~= aliases_signatures[roster] then
-        roster[false].version = (roster[false].version or 0) + 1
-        aliases_signatures[roster] = signature
-    end
-    apply_roster(roster, aliases)
+    local aliases = load_aliases()
+    persist_roster_aliases(
+        event.origin.username,
+        event.origin.host,
+        event.origin.roster,
+        aliases
+    )
 end, 1)
 
+-- Reaplica la política cuando un componente solicita el roster de un usuario.
 module:hook("iq-get/bare/jabber:iq:roster:query", function(event)
     local target = event.stanza.attr.to
     if not target then
@@ -232,15 +263,11 @@ module:hook("iq-get/bare/jabber:iq:roster:query", function(event)
     end
 
     local roster = roster_manager.load_roster(username, host)
-    local aliases, signature = load_aliases()
-    if roster and roster[false]
-        and signature ~= aliases_signatures[roster] then
-        roster[false].version = (roster[false].version or 0) + 1
-        aliases_signatures[roster] = signature
-    end
-    apply_roster(roster, aliases)
+    local aliases = load_aliases()
+    persist_roster_aliases(username, host, roster, aliases)
 end, 1)
 
+-- Protege los nombres y grupos frente a cambios enviados por gateways.
 module:hook("iq-set/bare/jabber:iq:roster:query", function(event)
     local target = event.stanza.attr.to
     if not target then
@@ -258,16 +285,6 @@ module:hook("iq-set/bare/jabber:iq:roster:query", function(event)
         end
     end
 end, 1)
-
-module:hook("roster-item-added", function(event)
-    local aliases = load_aliases()
-    apply_alias(aliases, event.jid, event.item)
-end)
-
-module:hook("roster-item-updated", function(event)
-    local aliases = load_aliases()
-    apply_alias(aliases, event.jid, event.item)
-end)
 
 module:hook("presence/full", apply_participant_alias, 100)
 module:hook("presence/bare", apply_participant_alias, 100)
