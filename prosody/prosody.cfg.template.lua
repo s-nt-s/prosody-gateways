@@ -73,8 +73,8 @@ VirtualHost "{{XMPP_DOMAIN}}"
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
   modules_enabled = {
-    "privilege", "pep", "carbons", "offline", "mam", "roster_aliases",
-    --"participant_aliases", "contact_vcards", "contact_avatars"
+    "privilege", "pep", "bookmarks", "carbons", "offline", "mam",
+    "roster_aliases", --"bookmark_defaults"
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
