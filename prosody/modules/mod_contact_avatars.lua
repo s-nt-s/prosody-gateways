@@ -10,12 +10,10 @@ local avatar_dir = module:get_option_path(
     "/var/lib/prosody/avatar/custom"
 )
 
-local VCardNS = "vcard-temp"
 local PubSubNS = "http://jabber.org/protocol/pubsub"
 local AvatarMetadataNS = "urn:xmpp:avatar:metadata"
 local AvatarDataNS = "urn:xmpp:avatar:data"
-local occupant_jids = {}
-local nick_jids = {}
+local occupant_jids = module:shared("contact_avatar_jids")
 
 module:log("info", "contact_avatars loaded; directory=%s", avatar_dir)
 
@@ -36,11 +34,6 @@ local function avatar_jid_for_target(target)
     end
     local bare_target = jid.bare(target)
     occupant_jid = occupant_jids[bare_target]
-    if occupant_jid then
-        return occupant_jid
-    end
-    local _, _, nick = jid.split(target)
-    occupant_jid = nick and nick_jids[nick]
     if occupant_jid then
         return occupant_jid
     end
@@ -95,9 +88,7 @@ local function remember_occupant(event)
             if room then
                 occupant_jids[room .. "/" .. item.attr.nick] = occupant_jid
             end
-            nick_jids[item.attr.nick] = occupant_jid
         end
-
         local avatar = load_avatar(occupant_jid)
         if avatar then
             local update = stanza:get_child(
@@ -125,16 +116,6 @@ local function metadata_payload(avatar)
             type = avatar.mime,
             bytes = tostring(avatar.bytes),
         })
-end
-
-local function send_vcard(event, avatar)
-    local reply = st.reply(event.stanza)
-        :tag("vCard", { xmlns = VCardNS })
-            :tag("PHOTO")
-                :tag("TYPE"):text(avatar.mime):up()
-                :tag("BINVAL"):text(base64.encode(avatar.data))
-    event.origin.send(reply)
-    return true
 end
 
 local function send_avatar_data(event, avatar, item_id)
@@ -172,11 +153,6 @@ local function handle_avatar_query(event)
     local avatar = load_avatar(stanza.attr.to)
     if not avatar then
         return
-    end
-
-    local vcard = stanza:get_child("vCard", VCardNS)
-    if vcard then
-        return send_vcard(event, avatar)
     end
 
     local pubsub = stanza:get_child("pubsub", PubSubNS)

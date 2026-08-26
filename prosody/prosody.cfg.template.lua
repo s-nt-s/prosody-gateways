@@ -5,6 +5,9 @@ plugin_paths = {
   "/usr/local/share/lua/5.1",
   "/etc/prosody/custom_modules"
 }
+log = {
+  { levels = { "info" }, to = "console" };
+}
 
 allow_registration = false
 c2s_require_encryption = true
@@ -28,7 +31,7 @@ modules_enabled = {
   "http_file_share";
   "admin_shell";
   "pep";
-  "contact_avatars";
+  --"contact_avatars";
   --"bosh"; "websocket";
   "reload_components";
 }
@@ -59,7 +62,9 @@ Component "upload.{{XMPP_DOMAIN}}" "http_file_share"
   -- allow slidgram to use the upload component
   -- point generated upload URLs to the public host that actually serves the file share endpoint
   http_host = "{{XMPP_DOMAIN}}"
-  http_external_url = "https://{{XMPP_DOMAIN}}"
+  http_file_share_base_url = "https://{{XMPP_DOMAIN}}"
+  http_file_share_size_limit = 50 * 1024 * 1024
+  http_file_share_daily_quota = 500 * 1024 * 1024
   http_file_share_access = _http_file_share_access
 
 VirtualHost "{{XMPP_DOMAIN}}"
@@ -68,7 +73,8 @@ VirtualHost "{{XMPP_DOMAIN}}"
     certificate = "/etc/prosody/certs/{{XMPP_DOMAIN}}.crt";
   };
   modules_enabled = {
-    "privilege", "pep", "carbons", "offline", "mam", "roster_aliases"
+    "privilege", "pep", "carbons", "offline", "mam", "roster_aliases",
+    --"participant_aliases", "contact_vcards", "contact_avatars"
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
@@ -83,25 +89,37 @@ VirtualHost "{{XMPP_DOMAIN}}"
 Component "{{TELEGRAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
-  http_file_share_expires_after = 86400   -- 1 día
+  privileged_entities = {
+    ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
+  }
+  http_file_share_expires_after = 86400*3   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
-  http_file_share_expires_after = 86400   -- 1 día
+  privileged_entities = {
+    ["{{WHATSAPP_COMPONENT_JID}}"] = _privileges;
+  }
+  http_file_share_expires_after = 86400*3 -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
-  http_file_share_expires_after = 86400   -- 1 día
+  privileged_entities = {
+    ["{{STEAM_COMPONENT_JID}}"] = _privileges;
+  }
+  http_file_share_expires_after = 86400*3   -- 1 día
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
   component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
-  http_file_share_expires_after = 86400   -- 1 día
+  privileged_entities = {
+    ["{{GOOGLE_COMPONENT_JID}}"] = _privileges;
+  }
+  http_file_share_expires_after = 86400*3   -- 1 día
   http_file_share_access = _http_file_share_access
 
 admins = { "{{XMPP_ADMIN}}" }

@@ -140,97 +140,6 @@ local function apply_stanza_alias(item, aliases)
     end
 end
 
--- Cambia el nick visible de un participante MUC sin cambiar su JID real.
-local function apply_participant_alias(event)
-    local stanza = event.stanza
-    local origin_type = event.origin and event.origin.type or "nil"
-    local muc_user = stanza:get_child(
-        "x", "http://jabber.org/protocol/muc#user"
-    )
-    local item = muc_user and muc_user:get_child("item")
-    local bare_jid = item and item.attr.jid
-    local user_nick = stanza:get_child(
-        "nick", "http://jabber.org/protocol/nick"
-    )
-    module:log(
-        "debug",
-        "presence hook host=%s origin=%s type=%s from=%s to=%s item.jid=%s item.nick=%s nick=%s stanza=%s",
-        module.host,
-        origin_type,
-        stanza.attr.type or "available",
-        stanza.attr.from or "nil",
-        stanza.attr.to or "nil",
-        bare_jid or "nil",
-        item and item.attr.nick or "nil",
-        user_nick and user_nick[1] or "nil",
-        stanza
-    )
-
-    if origin_type ~= "component" then
-        return
-    end
-
-    local aliases = load_aliases()
-    local alias
-
-    if bare_jid then
-        alias = aliases[bare_jid] or aliases[jid.bare(bare_jid)]
-    end
-
-    if not alias and not bare_jid and stanza.attr.from then
-        local _, room_host, participant_resource = jid.split(stanza.attr.from)
-        if room_host and participant_resource then
-            bare_jid = participant_resource .. "@" .. room_host
-            alias = aliases[bare_jid]
-        end
-    end
-
-    if not alias and item then
-        local item_node, item_host = item.attr.jid and jid.split(item.attr.jid)
-        if item_node and item_host then
-            for alias_jid, candidate in pairs(aliases) do
-                local alias_node, alias_host = jid.split(alias_jid)
-                if alias_node == item_node and alias_host == item_host then
-                    alias = candidate
-                    break
-                end
-            end
-        end
-    end
-
-    if not alias then
-        module:log("debug", "No participant alias for item JID %s", bare_jid or "nil")
-        return
-    end
-
-    if type(alias) == "table"
-        and alias.name ~= json.null
-        and type(alias.name) == "string" then
-        if item then
-            item.attr.nick = alias.name
-        end
-        local from_room = stanza.attr.from and stanza.attr.from:match("^([^/]+)")
-        if from_room then
-            stanza.attr.from = from_room .. "/" .. alias.name
-        end
-        if user_nick then
-            user_nick[1] = alias.name
-        else
-            stanza:tag("nick", { xmlns = "http://jabber.org/protocol/nick" })
-                :text(alias.name)
-                :up()
-        end
-        module:log(
-            "info",
-            "Participant alias applied: %s -> %s; from=%s; item.nick=%s",
-            bare_jid,
-            alias.name,
-            stanza.attr.from or "nil",
-            item and item.attr.nick or "nil"
-        )
-    end
-end
-
 module:hook("roster-load", function(event)
     local aliases = load_aliases()
     persist_roster_aliases(event.username, event.host, event.roster, aliases)
@@ -286,6 +195,3 @@ module:hook("iq-set/bare/jabber:iq:roster:query", function(event)
     end
 end, 1)
 
-module:hook("presence/full", apply_participant_alias, 100)
-module:hook("presence/bare", apply_participant_alias, 100)
-module:hook("presence/host", apply_participant_alias, 100)
