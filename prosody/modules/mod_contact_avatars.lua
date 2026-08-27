@@ -2,8 +2,8 @@ local jid = require "prosody.util.jid"
 local st = require "prosody.util.stanza"
 local hashes = require "prosody.util.hashes"
 local encodings = require "prosody.util.encodings"
+local hex = require "prosody.util.hex"
 local base64 = encodings.base64
-local hex = encodings.hex
 
 local avatar_dir = module:get_option_path(
     "contact_avatar_dir",
@@ -68,7 +68,28 @@ local function load_avatar(target)
     end
 end
 
--- Recuerda el JID real asociado a un ocupante visible de una sala MUC.
+local function add_avatar_update(stanza, target)
+    local avatar = load_avatar(target)
+    if not avatar then
+        return
+    end
+
+    local update = stanza:get_child(
+        "x", "vcard-temp:x:update"
+    )
+    if not update then
+        stanza:tag("x", { xmlns = "vcard-temp:x:update" }):up()
+        update = stanza:get_child("x", "vcard-temp:x:update")
+    end
+    local photo = update and update:get_child("photo")
+    if not photo then
+        update:text_tag("photo", hex.encode(avatar.hash))
+    else
+        photo[1] = hex.encode(avatar.hash)
+    end
+end
+
+-- Añade el anuncio del avatar a presencias MUC y a presencias 1:1.
 local function remember_occupant(event)
     local stanza = event.stanza
     if event.origin and event.origin.type ~= "component" then
@@ -78,9 +99,14 @@ local function remember_occupant(event)
         "x", "http://jabber.org/protocol/muc#user"
     )
     local item = muc_user and muc_user:get_child("item")
-    if item and item.attr.jid and stanza.attr.from then
+    if not stanza.attr.from then
+        return
+    end
+
+    local from = stanza.attr.from
+    local avatar_target
+    if item and item.attr.jid then
         local occupant_jid = jid.bare(item.attr.jid)
-        local from = stanza.attr.from
         occupant_jids[from] = occupant_jid
         occupant_jids[jid.bare(from)] = occupant_jid
         if item.attr.nick then
@@ -89,22 +115,12 @@ local function remember_occupant(event)
                 occupant_jids[room .. "/" .. item.attr.nick] = occupant_jid
             end
         end
-        local avatar = load_avatar(occupant_jid)
-        if avatar then
-            local update = stanza:get_child(
-                "x", "vcard-temp:x:update"
-            )
-            if not update then
-                stanza:tag("x", { xmlns = "vcard-temp:x:update" }):up()
-                update = stanza:get_child("x", "vcard-temp:x:update")
-            end
-            local photo = update and update:get_child("photo")
-            if not photo then
-                update:text_tag("photo", hex.encode(avatar.hash))
-            else
-                photo[1] = hex.encode(avatar.hash)
-            end
-        end
+        avatar_target = occupant_jid
+    elseif not muc_user then
+        avatar_target = jid.bare(from)
+    end
+    if avatar_target then
+        add_avatar_update(stanza, avatar_target)
     end
 end
 
@@ -171,3 +187,4 @@ module:hook("pre-iq/bare", handle_avatar_query, 1000)
 module:hook("pre-iq/full", handle_avatar_query, 1000)
 module:hook("presence/bare", remember_occupant, 90)
 module:hook("presence/full", remember_occupant, 90)
+module:hook("presence/host", remember_occupant, 90)

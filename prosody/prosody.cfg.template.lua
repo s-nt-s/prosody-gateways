@@ -31,7 +31,7 @@ modules_enabled = {
   "http_file_share";
   "admin_shell";
   "pep";
-  --"contact_avatars";
+  --"contact_avatars"; "contact_vcards";
   --"bosh"; "websocket";
   "reload_components";
 }
@@ -74,7 +74,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
   };
   modules_enabled = {
     "privilege", "pep", "bookmarks", "carbons", "offline", "mam",
-    "roster_aliases", --"bookmark_defaults"
+    "roster_aliases", "participant_aliases", -- "direct_aliases", --"bookmark_defaults"
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "roster"
