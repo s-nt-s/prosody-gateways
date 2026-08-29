@@ -1,0 +1,44 @@
+FROM docker.io/alpine:latest as builder
+
+RUN apk add --no-cache --virtual .build git cmake expat-dev g++ git libidn-dev \
+        make postgresql-dev python3 sqlite-dev udns-dev util-linux-dev botan3-dev
+
+
+# Clonar y compilar Biboumi
+WORKDIR /source
+RUN git clone https://codeberg.org/poezio/biboumi.git .
+
+RUN mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr \
+             -DCMAKE_BUILD_TYPE=Release \
+             -DWITH_BOTAN=1 \
+             -DWITHOUT_SYSTEMD=1 \
+             -DWITH_SQLITE3=1 \
+             -DWITH_LIBIDN=1 \
+             -DWITH_POSTGRESQL=1 \
+             -DWITH_UDNS=1 \
+             -DWITH_LIBIDN=1 && \
+    cmake --build . && \
+    cmake --install .
+
+# ---
+
+FROM docker.io/alpine:latest
+
+RUN apk add --no-cache libidn libpq libstdc++ libuuid postgresql-libs \
+        sqlite-libs udns expat ca-certificates botan3
+
+COPY --from=builder /etc/biboumi /etc/biboumi
+COPY --from=builder /usr/bin/biboumi /usr/bin/biboumi
+
+COPY --from=builder /source/docker/biboumi/alpine/biboumi.cfg /etc/biboumi/biboumi.cfg
+
+RUN adduser biboumi -D -h /home/biboumi && \
+    mkdir /var/lib/biboumi && \
+    chown -R biboumi:biboumi /var/lib/biboumi && \
+    chown -R biboumi:biboumi /etc/biboumi
+
+WORKDIR /home/biboumi
+USER biboumi
+
+CMD ["/usr/bin/biboumi", "/etc/biboumi/biboumi.cfg"]

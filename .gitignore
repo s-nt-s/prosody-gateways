@@ -15,6 +15,9 @@ slidge/*
 spectrum2/*
 !spectrum2/*template*
 
+irc/*
+!irc/*template*
+
 tools/*
 !tools/*.py
 !tools/requirements.txt

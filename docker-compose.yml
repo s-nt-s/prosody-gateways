@@ -109,6 +109,23 @@ services:
     networks:
       - xmpp-net
 
+  irc:
+    build:
+      context: ./dk/
+      dockerfile: Dockerfile.biboumi
+    container_name: irc
+    restart: unless-stopped
+    depends_on:
+      prosody:
+        condition: service_healthy
+    volumes:
+      - ./irc/biboumi.cfg:/etc/biboumi/biboumi.cfg:ro
+      - ./irc/data:/var/lib/biboumi/
+    environment:
+      TZ: Europe/Madrid
+    networks:
+      - xmpp-net
+
 networks:
   xmpp-net:
     driver: bridge

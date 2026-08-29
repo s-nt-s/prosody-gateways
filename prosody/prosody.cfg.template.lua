@@ -54,6 +54,7 @@ local _http_file_share_access = {
   "{{WHATSAPP_COMPONENT_JID}}";
   "{{STEAM_COMPONENT_JID}}";
   "{{GOOGLE_COMPONENT_JID}}";
+  "{{IRC_COMPONENT_JID}}";
 }
 
 Component "pubsub.{{XMPP_DOMAIN}}" "pubsub"
@@ -84,10 +85,11 @@ VirtualHost "{{XMPP_DOMAIN}}"
     ["{{WHATSAPP_COMPONENT_JID}}"] = _privileges;
     ["{{STEAM_COMPONENT_JID}}"] = _privileges;
     ["{{GOOGLE_COMPONENT_JID}}"] = _privileges;
+    ["{{IRC_COMPONENT_JID}}"] = _privileges;
   }
 
 Component "{{TELEGRAM_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
@@ -96,7 +98,7 @@ Component "{{TELEGRAM_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{WHATSAPP_COMPONENT_JID}}"] = _privileges;
@@ -105,7 +107,7 @@ Component "{{WHATSAPP_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{STEAM_COMPONENT_JID}}"] = _privileges;
@@ -114,12 +116,21 @@ Component "{{STEAM_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{GOOGLE_COMPONENT_JID}}"] = _privileges;
   }
   http_file_share_expires_after = 86400*3   -- 1 día
+  http_file_share_access = _http_file_share_access
+
+Component "{{IRC_COMPONENT_JID}}"
+  component_secret = "{{COMPONENT_SECRET}}"
+  modules_enabled = {"privilege"}
+  privileged_entities = {
+    ["{{IRC_COMPONENT_JID}}"] = _privileges;
+  }
+  http_file_share_expires_after = 86400*3
   http_file_share_access = _http_file_share_access
 
 admins = { "{{XMPP_ADMIN}}" }
