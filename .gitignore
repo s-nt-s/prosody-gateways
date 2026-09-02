@@ -17,6 +17,7 @@ spectrum2/*
 
 irc/*
 !irc/*template*
+!irc/*.policy.txt
 
 tools/*
 !tools/*.py

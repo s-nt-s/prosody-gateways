@@ -17,7 +17,9 @@ sudo mkdir -p \
     ./prosody/data/ \
     ./slidge/telegram/ \
     ./slidge/whatsapp/ \
-    ./slidge/steam/
+    ./slidge/steam/ \
+    ./irc/data/ \
+    ./irc/custom-proxy/
 
 if [ -v XMPP_CRT ] && [ -v XMPP_KEY ]; then
 if sudo test -f "$XMPP_CRT"; then

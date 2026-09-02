@@ -120,11 +120,18 @@ services:
         condition: service_healthy
     volumes:
       - ./irc/biboumi.cfg:/etc/biboumi/biboumi.cfg:ro
+      - ./irc/not_verify_certificate.policy.txt:/etc/biboumi/irc.irc-hispano.org.policy.txt:ro
+      - ./irc/not_verify_certificate.policy.txt:/etc/biboumi/ssl.chathispano.com.policy.txt:ro
+      - ./irc/not_verify_certificate.policy.txt:/etc/biboumi/irc.freenode.net.policy.txt:ro
       - ./irc/data:/var/lib/biboumi/
+      #- ./irc/custom-proxy:/etc/custom-proxy:ro
     environment:
-      TZ: Europe/Madrid
+      - TZ=Europe/Madrid
+      - IRC_PROXY
     networks:
       - xmpp-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   xmpp-net:
