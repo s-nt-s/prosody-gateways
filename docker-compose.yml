@@ -124,7 +124,7 @@ services:
       - ./irc/not_verify_certificate.policy.txt:/etc/biboumi/ssl.chathispano.com.policy.txt:ro
       - ./irc/not_verify_certificate.policy.txt:/etc/biboumi/irc.freenode.net.policy.txt:ro
       - ./irc/data:/var/lib/biboumi/
-      #- ./irc/custom-proxy:/etc/custom-proxy:ro
+      # - ./irc/custom-proxy:/etc/custom-proxy:ro
     environment:
       - TZ=Europe/Madrid
       - IRC_PROXY

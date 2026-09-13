@@ -66,6 +66,7 @@ Component "upload.{{XMPP_DOMAIN}}" "http_file_share"
   http_file_share_base_url = "https://{{XMPP_DOMAIN}}"
   http_file_share_size_limit = 50 * 1024 * 1024
   http_file_share_daily_quota = 500 * 1024 * 1024
+  http_file_share_expires_after = 86400 * 3
   http_file_share_access = _http_file_share_access
 
 VirtualHost "{{XMPP_DOMAIN}}"
@@ -78,7 +79,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
     "roster_aliases", "participant_aliases", "blocklist", "vcard_legacy", -- "direct_aliases", --"bookmark_defaults"
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
-  default_archive_policy = "roster"
+  default_archive_policy = "always"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
