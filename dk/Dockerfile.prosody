@@ -1,4 +1,8 @@
 FROM prosodyim/prosody:13.0
 
+RUN apt-get update && \
+    apt-get install -y netcat-openbsd && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN prosodyctl install --server=https://modules.prosody.im/rocks/ mod_privilege && \
     prosodyctl install --server=https://modules.prosody.im/rocks/ mod_reload_components

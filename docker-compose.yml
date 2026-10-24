@@ -14,7 +14,18 @@ services:
     volumes:
       - ./prosody/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua
       - ./prosody/data:/var/lib/prosody
+      - ./prosody/modules:/etc/prosody/custom_modules:ro
       - ./prosody/certs:/etc/prosody/certs:ro
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "sleep 10 && nc -z 127.0.0.1 5222"
+      interval: 11s
+      timeout: 15s
+      retries: 12
+      start_period: 10s
+
     networks:
       - xmpp-net
 
@@ -23,7 +34,8 @@ services:
     container_name: telegram
     restart: unless-stopped
     depends_on:
-      - prosody
+      prosody:
+        condition: service_healthy
     volumes:
       - ./slidge/telegram/:/var/lib/slidge/
       - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
@@ -41,7 +53,8 @@ services:
     container_name: whatsapp
     restart: unless-stopped
     depends_on:
-      - prosody
+      prosody:
+        condition: service_healthy
     volumes:
       - ./slidge/whatsapp/:/var/lib/slidge/
       - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
@@ -59,7 +72,8 @@ services:
     container_name: steam
     restart: unless-stopped
     depends_on:
-      - prosody
+      prosody:
+        condition: service_healthy
     volumes:
       - ./slidge/steam/:/var/lib/slidge/
       - ./slidge/common.conf:/etc/slidge/conf.d/common.conf
@@ -79,7 +93,8 @@ services:
     container_name: google
     restart: unless-stopped
     depends_on:
-      - prosody
+      prosody:
+        condition: service_healthy
     entrypoint:
       - /usr/bin/spectrum2
       - --no-daemonize

@@ -4,6 +4,8 @@ notas.txt
 prosody/*
 !prosody/*template*
 !prosody/mod_*.lua
+!prosody/modules/
+!prosody/modules/mod_*.lua
 !prosody/Dockerfile
 
 slidge/*
