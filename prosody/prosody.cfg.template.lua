@@ -28,10 +28,8 @@ modules_enabled = {
   "ping"; "register"; "admin_adhoc";
   "carbons"; "offline"; "mam";
   "privilege";
-  "http_file_share";
   "admin_shell";
   "pep";
-  --"bosh"; "websocket";
   "reload_components";
 }
 
@@ -58,12 +56,11 @@ local _http_file_share_access = {
 Component "pubsub.{{XMPP_DOMAIN}}" "pubsub"
 
 Component "upload.{{XMPP_DOMAIN}}" "http_file_share"
-  -- allow slidgram to use the upload component
-  -- point generated upload URLs to the public host that actually serves the file share endpoint
+  -- Use the main domain for HTTP, while keeping Prosody's /file_share endpoint.
   http_host = "{{XMPP_DOMAIN}}"
-  http_file_share_base_url = "https://{{XMPP_DOMAIN}}"
   http_file_share_size_limit = 50 * 1024 * 1024
   http_file_share_daily_quota = 500 * 1024 * 1024
+  http_file_share_expires_after = 86400 * 3
   http_file_share_access = _http_file_share_access
 
 VirtualHost "{{XMPP_DOMAIN}}"
@@ -73,10 +70,10 @@ VirtualHost "{{XMPP_DOMAIN}}"
   };
   modules_enabled = {
     "privilege", "pep", "bookmarks", "carbons", "offline", "mam",
-    "roster_aliases",
+    "roster_aliases", "participant_aliases", "bookmark_defaults", "direct_aliases",
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
-  default_archive_policy = "roster"
+  default_archive_policy = "true"
   pubsub_component = "pubsub.{{XMPP_DOMAIN}}"
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
@@ -86,7 +83,7 @@ VirtualHost "{{XMPP_DOMAIN}}"
   }
 
 Component "{{TELEGRAM_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{TELEGRAM_COMPONENT_JID}}"] = _privileges;
@@ -95,7 +92,7 @@ Component "{{TELEGRAM_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{WHATSAPP_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{WHATSAPP_COMPONENT_JID}}"] = _privileges;
@@ -104,7 +101,7 @@ Component "{{WHATSAPP_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{STEAM_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{STEAM_COMPONENT_JID}}"] = _privileges;
@@ -113,7 +110,7 @@ Component "{{STEAM_COMPONENT_JID}}"
   http_file_share_access = _http_file_share_access
 
 Component "{{GOOGLE_COMPONENT_JID}}"
-  component_secret = "{{SLIDGE_COMPONENT_SECRET}}"
+  component_secret = "{{COMPONENT_SECRET}}"
   modules_enabled = {"privilege"}
   privileged_entities = {
     ["{{GOOGLE_COMPONENT_JID}}"] = _privileges;

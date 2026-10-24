@@ -131,7 +131,7 @@ class RosterExporter(ClientXMPP):
             data = await self.__export(_event)
             OUTPUT_FILE.write_text(
                 json.dumps(
-                    {k: v.to_dict() for k, v in data.items()},
+                    {k: v.to_dict() for k, v in data.items() if v.to_dict()},
                     ensure_ascii=False,
                     indent=2,
                     sort_keys=True
