@@ -26,6 +26,7 @@ from os import chdir
 from os.path import dirname, abspath, isfile
 import requests
 
+
 chdir(dirname(abspath(__file__)))
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ logging.basicConfig(level=logging.INFO)
 
 GG = '@' + os.environ['GOOGLE_COMPONENT_JID']
 URL_ROSTER_FIX = os.environ['ROSTER_FIX']
+
 
 def get_json(url: str):
     r = requests.get(url)
@@ -264,6 +266,31 @@ class RosterExporter(ClientXMPP):
                 ),
                 encoding="utf-8",
             )
+            fixed = {}
+            for v in data:
+                obj = {}
+                g = v.get("groups", [])
+                n = v.get("name", "")
+                if n in ("", None) or re.match(r"^\s*\+[\d\s]+$", n):
+                    n = None
+                if g is None or len(g) == 0:
+                    g = None
+                if (g , n) == (None, None):
+                    continue
+                if g is not None:
+                    obj["groups"] = g
+                if n is not None:
+                    obj["name"] = n
+                fixed[v["jid"]] = obj
+            OUTPUT_FILE.with_suffix(".fixed").write_text(
+                json.dumps(
+                    fixed,
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True
+                ),
+                encoding="utf-8",
+            )
             print("DONE")
         finally:
             await self.disconnect(wait=2.0)
@@ -298,7 +325,7 @@ class RosterExporter(ClientXMPP):
                     if room_jid in rooms:
                         user_groups[u].add(g)
 
-        return {k: to_tp(*v) for k,v in user_groups.items()}
+        return {k: to_tp(*v) for k, v in user_groups.items()}
 
 
 def main() -> None:
