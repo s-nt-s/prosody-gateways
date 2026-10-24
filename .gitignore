@@ -18,3 +18,5 @@ spectrum2/*
 tools/*
 !tools/*.py
 !tools/requirements.txt
+
+irc/

@@ -70,7 +70,8 @@ VirtualHost "{{XMPP_DOMAIN}}"
   };
   modules_enabled = {
     "privilege", "pep", "bookmarks", "carbons", "offline", "mam",
-    "roster_aliases", "participant_aliases", "bookmark_defaults", "direct_aliases",
+    "roster_aliases", "bookmark_defaults"
+    -- , "participant_aliases", "direct_aliases",
   }
   archive_expires_after = 0 -- guardar historial indefinidamente
   default_archive_policy = "true"
