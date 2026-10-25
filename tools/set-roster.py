@@ -76,6 +76,7 @@ GRP_ROOMS = {k: to_tp(*v) for k, v in read_json("rooms.json").items()}
 
 OUTPUT_FILE = Path(__file__).parent.parent / "prosody/data/roster-names.json"
 
+
 class RosterExporter(ClientXMPP):
     def __init__(self, jid: str, password: str) -> None:
         super().__init__(jid, password)
@@ -123,7 +124,7 @@ class RosterExporter(ClientXMPP):
                 user = mk_user(jid, None, user_group)
                 if user:
                     contacts[jid] = user
-        
+
         return contacts
 
     async def export(self, _event: Any) -> None:
@@ -172,7 +173,7 @@ class RosterExporter(ClientXMPP):
                     if room_jid in rooms:
                         user_groups[u].add(g)
 
-        return {k: to_tp(*v) for k,v in user_groups.items()}
+        return {k: to_tp(*v) for k, v in user_groups.items()}
 
 
 def clean_name(name: str) -> str:
@@ -184,10 +185,13 @@ def clean_name(name: str) -> str:
         return name.title()
     return name
 
+
 def clean_groups(groups: Optional[list[str]]) -> Optional[list[str]]:
     if not groups:
         return None
-    ok = set(groups).difference({"WhatsApp", "Telegram", "Steam", "Google Chat"})
+    ok = set(groups).difference({
+        "WhatsApp", "Telegram", "Steam", "Google Chat"
+    })
     if ok:
         return sorted(ok)
     return groups
@@ -241,7 +245,6 @@ def mk_user(jid: str, item: dict | None, user_group: dict[str, tuple[str]]) -> M
     )
 
     return user
-
 
 
 if __name__ == "__main__":
