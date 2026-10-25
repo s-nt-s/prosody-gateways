@@ -30,6 +30,7 @@ GG = '@' + os.environ['GOOGLE_COMPONENT_JID']
 TAIL_XMPP_DOMAIN = '.' + os.environ['XMPP_DOMAIN']
 URL_ROSTER_FIX = os.environ['ROSTER_FIX']
 
+
 def get_json(url: str):
     r = requests.get(url)
     r.raise_for_status()
