@@ -13,7 +13,7 @@ from telethon.tl.types.contacts import ImportedContacts
 from telethon.tl.custom.dialog import Dialog
 from telethon.tl.patched import Message
 from telethon.tl.types.contacts import ResolvedPeer
-from telethon.errors.rpcerrorlist import PhoneNotOccupiedError
+from telethon.errors.rpcerrorlist import PhoneNotOccupiedError, FloodWaitError
 import logging
 
 from os import chdir
@@ -32,7 +32,7 @@ class MyClient(TelegramClient):
                     phone=phone
                 )
             )
-        except PhoneNotOccupiedError:
+        except (PhoneNotOccupiedError, FloodWaitError):
             return None
         if not isinstance(r, ResolvedPeer):
             return None
