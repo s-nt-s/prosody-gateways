@@ -73,11 +73,26 @@ class MyClient(TelegramClient):
                         yield message.sender
 
 
-def read_json(path: str) -> dict[str, int]:
+def _read_json(path: str) -> dict[str, int]:
     if not isfile(path):
         return {}
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def read_json(path: str) -> dict[str, int]:
+    data = _read_json(path)
+    tmp = 0
+    while True:
+        tmp = tmp + 1
+        aux = _read_json(f"{path}.{tmp}")
+        if not aux:
+            break
+        for k, v in aux.items():
+            if v is not None and data.get(k) is None:
+                data[k] = v
+    write_json(path, data)
+    return data
 
 
 def write_json(path: str, data: dict):
@@ -109,7 +124,7 @@ PHONES = tuple(sorted(
 ))
 
 
-def add_kv(p:str, i: int):
+def add_kv(p: str, i: int):
     p = parse_num(p)
     if i is not None and DATA.get(p) != i:
         print(p, i)
