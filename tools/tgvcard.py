@@ -149,6 +149,7 @@ def user_to_vcard(
 
 
 async def do_main():
+    phones: set[int] = set()
     done: set[int] = set()
     client = MyClient.get()
     file_vcards: dict[str, set[str]] = defaultdict(set)
@@ -172,12 +173,15 @@ async def do_main():
             file = f"{OUT}/{name}.vcf"
             async for u in client.iter_users_of_group(g):
                 done.add(u.id)
+                if u.phone:
+                    phones.add('+'+u.phone)
                 card = await get_vcard(u)
                 if card is not None:
                     file_vcards[file].add(card.serialize())
         ids = tuple(
-            v for v in safe_read_dict("tg.json").values()
-            if isinstance(v, int) and v not in done
+            v for k, v in safe_read_dict("tg.json").items()
+            if isinstance(v, int) and v not in done and
+            k not in phones
         )
         async for u in client.get_users(*ids):
             card = await get_vcard(u)

@@ -10,7 +10,7 @@ from telethon.tl.types.contacts import ImportedContacts
 from telethon.tl.custom.dialog import Dialog
 from telethon.tl.patched import Message
 from telethon.tl.types.contacts import ResolvedPeer
-from telethon.errors.rpcerrorlist import PhoneNotOccupiedError, FloodWaitError
+from telethon.errors.rpcerrorlist import PhoneNotOccupiedError, FloodWaitError, ChatAdminRequiredError
 
 from typing import NamedTuple
 from io import BytesIO
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 MESSAGES_PER_DIALOG = 100000
-REQUEST_DELAY = 3.1
+REQUEST_DELAY = 1
 TELEGRAM_SESSION = "telegram_lookup"
 EntityT = TypeVar("EntityT")
 
@@ -180,9 +180,12 @@ class MyClient(TelegramClient):
         #    if isinstance(message, Message):
         #        if isinstance(message.sender, User):
         #            yield message.sender
-        async for user in self.iter_participants(e):
-            if isinstance(user, User):
-                yield user
+        try:
+            async for user in self.iter_participants(e):
+                if isinstance(user, User):
+                    yield user
+        except ChatAdminRequiredError:
+            pass
 
     async def get_avatar(self, u: User):
         img = await self.download_profile_photo(u, file=bytes)

@@ -180,7 +180,7 @@ class RosterExporter(ClientXMPP):
 def clean_name(name: str) -> str:
     if name in (None, ""):
         return None
-    if re.match(r"^\s*\+[\d\s]+$", name):
+    if re.match(r"^\s*\+[\d\s]+$", name) or re.match(r"^\+\d[∙\d]+$", name):
         return None
     if name in (name.upper(), name.lower()):
         return name.title()

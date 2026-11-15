@@ -58,8 +58,8 @@ def add_user(user):
 async def do_main():
     client = MyClient.get()
     async with client:
-        #async for u in client.iter_users():
-        #    add_user(u)
+        async for u in client.iter_users():
+            add_user(u)
         async for u in client.get_users(*get_phones()):
             add_user(u)
         async for u in client.iter_import(*get_phones()):
