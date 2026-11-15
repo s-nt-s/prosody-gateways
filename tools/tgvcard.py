@@ -1,230 +1,194 @@
 #!/usr/bin/env python3
 
-"""Export Telegram group members as a multi-contact vCard 3.0 file."""
-
-import argparse
 import asyncio
-import base64
-import logging
-import os
-import re
-from pathlib import Path
-from typing import Optional
+from datetime import date
 
-from telethon import TelegramClient
-from telethon.tl.types import Channel, Chat, User
+from tg import MyClient, User, Img, UserFull, safe_read_dict
+
+import logging
+import vobject
+import re
+from os import makedirs
+from collections import defaultdict
+
 
 logger = logging.getLogger(__name__)
-XMPP_DOMAIN = os.environ['TELEGRAM_COMPONENT_JID']
-SESSION = "telegram_lookup"
+
+OUT = "/tmp/v"
+makedirs(OUT, exist_ok=True)
+ALIAS = safe_read_dict("tg_alias.json")
 
 
-def escape_vcard(value: str) -> str:
-    """Escape a text value according to vCard 3.0."""
-    return (
-        value.replace("\\", "\\\\")
-        .replace("\n", "\\n")
-        .replace(";", "\\;")
-        .replace(",", "\\,")
-    )
+def simplify(s: str):
+    s = s.lower()
+    for k, v in {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+    }.items():
+        s = s.replace(k, v)
+    s = re.sub(r"[\s\-:…🏆]+", " ", s)
+    s = re.sub(r"\s+", "-", s.strip())
+    return s
 
 
-def fold_line(line: str, max_octets: int = 75) -> str:
-    """Fold a vCard content line without splitting UTF-8 characters."""
-    folded: list[str] = []
-    current = ""
-    current_size = 0
-    for char in line:
-        char_size = len(char.encode("utf-8"))
-        if current_size + char_size > max_octets:
-            folded.append(current)
-            current = " "
-            current_size = 1
-        current += char
-        current_size += char_size
-    folded.append(current)
-    return "\r\n".join(folded)
+def user_to_vcard(
+    u: User,
+    avatar: Img | None = None,
+    full: UserFull | None = None,
+):
+    card = vobject.vCard()
 
+    first_name = (u.first_name or "").strip()
+    last_name = (u.last_name or "").strip()
+    username = (u.username or "").strip().lstrip("@")
+    phone = (u.phone or "").strip()
+    if phone and not phone.startswith("+"):
+        phone = f"+{phone}"
 
-def make_vcard(user: User, avatar: Optional[bytes]) -> str:
-    first_name = (user.first_name or "").strip()
-    last_name = (user.last_name or "").strip()
     full_name = " ".join(part for part in (first_name, last_name) if part)
-    phone = f"+{user.phone}"
-    jid = f"{user.id}@{XMPP_DOMAIN}"
+    if not full_name:
+        full_name = username or phone or f"Telegram user {u.id}"
 
-    lines = [
-        "BEGIN:VCARD",
-        "VERSION:3.0",
-        f"FN:{escape_vcard(full_name)}",
-        "N:{};{};;;".format(escape_vcard(last_name), escape_vcard(first_name)),
-        f"TEL;TYPE=CELL:{escape_vcard(phone)}",
-        f"JABBERID:{jid}",
-    ]
+    card.add("version").value = "3.0"
+    card.add("fn").value = full_name
+    card.add("n").value = vobject.vcard.Name(
+        family=last_name,
+        given=first_name,
+        additional="",
+        prefix="",
+        suffix="",
+    )
+    card.add("uid").value = f"tg://user?id={u.id}"
+
+    if username:
+        card.add("nickname").value = username
+
+    if phone:
+        telephone = card.add("tel")
+        telephone.value = phone
+        telephone.params["TYPE"] = ["CELL"]
+
+    usernames: list[str] = []
+    if username:
+        usernames.append(username)
+    for alias in u.usernames or []:
+        alias_name = alias.username.strip().lstrip("@")
+        if alias.active and alias_name and alias_name not in usernames:
+            usernames.append(alias_name)
+    for alias_name in usernames:
+        card.add("url").value = f"https://t.me/{alias_name}"
+
     if avatar:
-        encoded_avatar = base64.b64encode(avatar).decode("ascii")
-        lines.append(f"PHOTO;ENCODING=b;TYPE=JPEG:{encoded_avatar}")
-    lines.append("END:VCARD")
-    return "\r\n".join(fold_line(line) for line in lines) + "\r\n"
+        photo = card.add("photo")
+        photo.value = avatar.content
+        photo.encoding_param = "b"
+        photo.params["TYPE"] = [avatar.image_type.upper()]
 
+    notes: list[str] = []
+    if full:
+        birthday = full.birthday
+        if full.birthday and birthday.year:
+            dt = date(birthday.year, birthday.month, birthday.day)
+            card.add("bday").value = f"{dt:%Y-%m-%d}"
 
-def output_path(group_name: str, requested_path: Optional[str]) -> Path:
-    if requested_path:
-        return Path(requested_path).expanduser()
-    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", group_name).strip("-.")
-    return Path(__file__).parent / f"{slug or 'telegram-group'}-contacts.vcf"
+        if full.about:
+            notes.append(full.about)
+        if full.note and full.note.text:
+            notes.append(full.note.text)
+        if full.bot_info and full.bot_info.description:
+            notes.append(full.bot_info.description)
 
+        if full.business_intro:
+            if full.business_intro.title:
+                card.add("title").value = full.business_intro.title
+            if full.business_intro.description:
+                notes.append(full.business_intro.description)
 
-async def find_group(client: TelegramClient, identifier: str):
-    """Resolve a group by its exact dialog title, username, link, or ID."""
-    matches = []
-    async for dialog in client.iter_dialogs():
-        entity = dialog.entity
-        title = getattr(entity, "title", None)
-        if isinstance(title, str) and title.casefold() == identifier.casefold():
-            matches.append(entity)
-
-    if len(matches) == 1:
-        return matches[0]
-    if len(matches) > 1:
-        raise ValueError(
-            f"Hay varios grupos con el nombre {identifier!r}; usa su username, enlace o ID."
-        )
-
-    try:
-        return await client.get_entity(identifier)
-    except Exception as error:
-        raise ValueError(
-            f"No se encontró el grupo {identifier!r} entre tus diálogos "
-            "ni se pudo resolver como username, enlace o ID."
-        ) from error
-
-
-async def export_groups(client: TelegramClient, groups, destination: Path) -> int:
-    cards: list[str] = []
-    seen_ids: set[int] = set()
-
-    for group in groups:
-        async for user in client.iter_participants(group):
-            if not isinstance(user, User) or user.id in seen_ids:
-                continue
-            seen_ids.add(user.id)
-
-            name = " ".join(
-                part.strip()
-                for part in (user.first_name, user.last_name)
-                if isinstance(part, str) and part.strip()
+        if full.business_location and full.business_location.address:
+            address = card.add("adr")
+            address.value = vobject.vcard.Address(
+                box="",
+                extended="",
+                street=full.business_location.address,
+                city="",
+                region="",
+                code="",
+                country="",
             )
-            if not name or not user.phone:
-                continue
+            address.params["TYPE"] = ["WORK"]
+        if full.business_location and full.business_location.geo_point:
+            latitude = full.business_location.geo_point.lat
+            longitude = full.business_location.geo_point.lon
+            if latitude is not None and longitude is not None:
+                card.add("geo").value = f"{latitude};{longitude}"
 
-            try:
-                avatar = await client.download_profile_photo(user, file=bytes)
-            except Exception:
-                logger.warning(
-                    "No se pudo descargar el avatar del usuario %s", user.id
-                )
-                avatar = None
+    if notes:
+        card.add("note").value = "\n\n".join(notes)
 
-            cards.append(make_vcard(user, avatar))
+    categories = ["Telegram"]
+    if u.bot:
+        categories.append("Bot")
+    if u.premium:
+        categories.append("Premium")
+    if u.verified:
+        categories.append("Verified")
+    if u.support:
+        categories.append("Support")
+    if u.scam:
+        categories.append("Scam")
+    if u.fake:
+        categories.append("Fake")
+    card.add("categories").value = categories
 
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if not cards:
-        return 0
-
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open("w", encoding="utf-8", newline="") as output_file:
-        output_file.write("".join(cards))
-    return len(cards)
+    return card
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Genera un archivo vCard con los miembros de un grupo de Telegram "
-            "que tienen nombre y teléfono."
-        )
-    )
-    parser.add_argument(
-        "group",
-        nargs="*",
-        help=(
-            "uno o varios grupos: título exacto, username, enlace o ID; "
-            "si se omite, exporta todos los grupos de tus diálogos"
-        ),
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        help=(
-            "ruta del archivo .vcf para grupos indicados; si no se indican "
-            "grupos, carpeta donde guardar un .vcf por grupo"
-        ),
-    )
-    args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    api_id = int(os.environ["TG_API_ID"])
-    api_hash = os.environ["TG_API_HASH"]
-    client = TelegramClient(SESSION, api_id, api_hash)
-    await client.start()
-    try:
-        if args.group:
-            groups = [
-                await find_group(client, identifier)
-                for identifier in args.group
-            ]
-            group_names = [
-                getattr(group, "title", identifier)
-                for group, identifier in zip(groups, args.group)
-            ]
-            destination = output_path("-".join(group_names), args.output)
-            count = await export_groups(client, groups, destination)
-            if count:
-                print(f"vCard generado: {destination} ({count} contactos)")
-            else:
-                print("No hay contactos para exportar; no se creó el archivo.")
-        else:
-            groups = []
-            async for dialog in client.iter_dialogs():
-                entity = dialog.entity
-                is_group = isinstance(entity, Chat) or (
-                    isinstance(entity, Channel)
-                    and (entity.megagroup or entity.gigagroup)
-                )
-                if is_group and getattr(entity, "title", None):
-                    groups.append(entity)
 
-            output_directory = (
-                Path(args.output).expanduser()
-                if args.output
-                else Path(__file__).parent
+async def do_main():
+    done: set[int] = set()
+    client = MyClient.get()
+    file_vcards: dict[str, set[str]] = defaultdict(set)
+    async with client:
+        my_id = await client.get_my_id()
+
+        async def get_vcard(iu: User):
+            if iu.id == my_id or iu.phone is None:
+                return None
+            return user_to_vcard(
+                iu,
+                await client.get_avatar(iu),
+                await client.get_full_user(iu)
             )
-            used_filenames: set[str] = set()
-            for group in groups:
-                group_title = group.title
-                destination = output_path(group_title, None)
-                filename = destination.name
-                if filename in used_filenames:
-                    filename = (
-                        f"{destination.stem}-{group.id}{destination.suffix}"
-                    )
-                used_filenames.add(filename)
-                destination = output_directory / filename
-                count = await export_groups(client, [group], destination)
-                if count:
-                    print(f"vCard generado: {destination} ({count} contactos)")
-                else:
-                    print(
-                        f"{group_title}: no hay contactos para exportar; "
-                        "no se creó el archivo."
-                    )
 
-            if not groups:
-                print("No se encontraron grupos en tus diálogos de Telegram.")
-    finally:
-        await client.disconnect()
+        print("YO:", my_id)
+        async for g in client.iter_groups():
+            name = simplify(g.title)
+            print(name)
+            name = ALIAS.get(name, name)
+            file = f"{OUT}/{name}.vcf"
+            async for u in client.iter_users_of_group(g):
+                done.add(u.id)
+                card = await get_vcard(u)
+                if card is not None:
+                    file_vcards[file].add(card.serialize())
+        ids = tuple(
+            v for v in safe_read_dict("tg.json").values()
+            if isinstance(v, int) and v not in done
+        )
+        async for u in client.get_users(*ids):
+            card = await get_vcard(u)
+            if card is not None:
+                file_vcards[f"{OUT}/otros.vcf"].add(card.serialize())
+        for file, cards in file_vcards.items():
+            print(file)
+            with open(file, "w", encoding="utf-8") as f:
+                for c in sorted(cards):
+                    f.write(c)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(do_main())
