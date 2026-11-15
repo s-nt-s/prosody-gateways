@@ -1,4 +1,4 @@
-*.session
+*.session*
 .env
 notas.txt
 
