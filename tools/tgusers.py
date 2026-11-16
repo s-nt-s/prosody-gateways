@@ -3,12 +3,15 @@
 import asyncio
 import json
 import sys
+from pathlib import Path
+import re
 
 from tg import MyClient, parse_phone_or_id, uq, User, safe_read_dict
 
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 
 def read_json(path: str) -> dict[str, int]:
@@ -38,6 +41,21 @@ DATA: dict[str, int] = read_json(OUTPUT_FILE)
 PHONES: tuple[str, ...] = uq(*map(parse_phone_or_id, sys.argv[1:]))
 
 
+def get_nums():
+    roster = Path(__file__).parent.parent / "prosody/data/roster-names.json"
+    if not roster.is_file():
+        return {}
+    with open(roster, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    nums: set[str] = set()
+    for k in data.keys():
+        if re.search(r"^\+\d+@.*$", k):
+            k = k.split("@")[0]
+            if k not in DATA:
+                nums.add(k)
+    return tuple(sorted(nums))
+
+
 def get_phones():
     return tuple(p for p in PHONES if p not in DATA)
 
@@ -58,18 +76,22 @@ def add_user(user):
 async def do_main():
     client = MyClient.get()
     async with client:
-        async for u in client.iter_users():
-            add_user(u)
+        #async for u in client.iter_users():
+        #    add_user(u)
         async for u in client.get_users(*get_phones()):
             add_user(u)
         async for u in client.iter_import(*get_phones()):
             add_user(u)
-
+    for p in get_phones():
+        if DATA.get(p) is None:
+            DATA[p] = None
     write_json(OUTPUT_FILE, DATA)
 
 
 if __name__ == "__main__":
     if len(PHONES) == 0:
-        PHONES = tuple(k for k, v in DATA.items() if v is None)
-        DATA = {k: v for k, v in DATA.items() if v is not None}
+        #PHONES = uq(*get_nums(), *(k for k, v in DATA.items() if v is None))
+        #DATA = {k: v for k, v in DATA.items() if v is not None}
+        PHONES = uq(*get_nums())
+        print(*PHONES)
     asyncio.run(do_main())

@@ -10,6 +10,8 @@ import vobject
 import re
 from os import makedirs
 from collections import defaultdict
+from pathlib import Path
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,25 @@ logger = logging.getLogger(__name__)
 OUT = "/tmp/v"
 makedirs(OUT, exist_ok=True)
 ALIAS = safe_read_dict("tg_alias.json")
+
+
+def get_roster() -> dict[str, str]:
+    roster = Path(__file__).parent.parent / "prosody/data/roster-names.json"
+    if not roster.is_file():
+        return {}
+    with open(roster, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    roster: dict[str, str] = dict()
+    for k, v in data.items():
+        if re.search(r"^\+\d+@.*$", k) and isinstance(v, dict):
+            k = k.split("@")[0]
+            g = v.get("groups")
+            if not isinstance(g, list):
+                continue
+            g = [x for x in g if x not in ("WhatsApp", )]
+            if len(g) > 0:
+                roster[k] = g[0]
+    return roster
 
 
 def simplify(s: str):
@@ -152,6 +173,7 @@ async def do_main():
     phones: set[int] = set()
     done: set[int] = set()
     client = MyClient.get()
+    ROSTER = get_roster()
     file_vcards: dict[str, set[str]] = defaultdict(set)
     async with client:
         my_id = await client.get_my_id()
@@ -186,7 +208,8 @@ async def do_main():
         async for u in client.get_users(*ids):
             card = await get_vcard(u)
             if card is not None:
-                file_vcards[f"{OUT}/otros.vcf"].add(card.serialize())
+                name = simplify(ROSTER.get(f"+{u.phone}", "otros"))
+                file_vcards[f"{OUT}/{name}.vcf"].add(card.serialize())
         for file, cards in file_vcards.items():
             print(file)
             with open(file, "w", encoding="utf-8") as f:
